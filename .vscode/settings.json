@@ -1,0 +1,12 @@
+{
+  "bashIde.explainshellEndpoint": "http://localhost:5000",
+  "files.associations": {
+    "*.h": "c",
+    "*.txt": "asciidoc",
+    "functional": "c",
+    "array": "c",
+    "tuple": "c",
+    "type_traits": "c",
+    "utility": "c"
+  }
+}
