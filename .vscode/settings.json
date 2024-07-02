@@ -1,5 +1,11 @@
 {
   "bashIde.explainshellEndpoint": "http://localhost:5000",
+  "commands": {
+    "custom.getRshimPid": {
+      "description": "Get the PID of the rshim process",
+      "script": "pgrep rshim | head -n 1"
+    }
+  },
   "files.associations": {
     "*.h": "c",
     "*.txt": "asciidoc",
