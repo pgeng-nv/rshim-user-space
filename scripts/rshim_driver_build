@@ -21,7 +21,7 @@ DEST_HOST=mtl-stm-az-119
 UBUNTU_HOST_X64=bu-kvm01-004
 UBUNTU_HOST_ARM64=mtbu-softiron2
 CENTOS_HOST_ARM64=dev-doca-arm1
-DEST_DIR=/auto/sw_mc_soc_release/packages
+DEST_DIR=/home/scratch/pgeng/test-rshims
 SSH_OPT="StrictHostKeyChecking no"
 SSH_EXTRA_ARG="-oHostKeyAlgorithms=+ssh-dss"
 
