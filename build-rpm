@@ -1,0 +1,43 @@
+#!/bin/sh -e
+
+#
+# Usage:
+#   ./rshim_driver_build
+#
+
+topdir=$(pwd)/rpmbuild
+[ -d $topdir ] && rm -rf $topdir
+mkdir -p $topdir/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
+
+# Generate rshim.spec
+./bootstrap.sh
+make
+cp rshim.spec $topdir/SPECS/
+
+# Generate source tarball
+rm -f *.tar.gz
+make dist  &> /dev/null   # xxx.tar.gz is not valid. just use its name
+tgz=$(ls *.tar.gz)
+version=$(basename $tgz .tar.gz | sed 's/rshim-//')
+git archive -o $tgz --prefix=${version}/ HEAD
+mv $tgz $topdir/SOURCES/
+
+#
+# Generate source RPM
+#
+rpmbuild --define "_topdir ${topdir}" -bs $topdir/SPECS/rshim.spec
+src_rpm=$(echo $topdir/SRPMS/rshim-*.src.rpm)
+if [ ! -e "${src_rpm}" ]; then
+  echo "${src_rpm} not found"
+  exit
+fi
+
+#
+# Build rshim RPM
+#
+rpmbuild --define "_topdir ${topdir}" --rebuild ${src_rpm}
+bin_rpm=$(echo ${topdir}/RPMS/x86_64/${name}*.rpm)
+if [ ! -f "${bin_rpm}" ]; then
+  echo "Failed to generate ${bin_rpm}"
+  exit
+fi
