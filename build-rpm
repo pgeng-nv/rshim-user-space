@@ -1,8 +1,11 @@
 #!/bin/sh -e
-
+#
+# Build rpm package for rshim driver for x86_64 and aarch64.
+# The script generates source rpm, then builds x86_64 or aarch64 rpm depending
+# on the CPU platform it's running on.
 #
 # Usage:
-#   ./rshim_driver_build
+#   ./build-rpm
 #
 
 topdir=$(pwd)/rpmbuild
