@@ -1,0 +1,46 @@
+name: CI/CD Pipeline for RSHIM
+
+on:
+  push:
+    branches:
+      - '**' # Trigger on all branches
+    tags:
+      - '*'  # Trigger on all tags
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker
+        run: |
+          docker pull centos:7
+
+      - name: Run build in CentOS 7
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace centos:7 /bin/bash -c "
+          yum install -y epel-release &&
+          yum install -y git rpm-build gcc make &&
+          ./build-rpm
+          "
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: rshim-rpm
+          path: rpmbuild/RPMS/**/*.rpm
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: rpmbuild/RPMS/**/*.rpm
+          asset_name: "rshim_${{ github.ref_name }}.rpm"
+          asset_content_type: application/x-rpm
