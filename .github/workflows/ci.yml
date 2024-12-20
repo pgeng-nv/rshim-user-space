@@ -22,9 +22,14 @@ jobs:
           build-essential debhelper devscripts fakeroot \
           libpci-dev libusb-1.0-0-dev libfuse-dev
 
+      - name: Enable ARM64 architecture
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt update
+
       - name: Set up environment for ARM64
         run: |
-          sudo apt update && sudo apt install -y \
+          sudo apt install -y \
           gcc-aarch64-linux-gnu qemu-user-static \
           libpci-dev:arm64 libusb-1.0-0-dev:arm64 libfuse-dev:arm64
 
