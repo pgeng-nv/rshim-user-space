@@ -16,12 +16,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up environment
+      - name: Set up environment for x86_64
         run: |
           sudo apt update && sudo apt install -y \
           build-essential debhelper devscripts fakeroot \
-          libpci-dev libusb-1.0-0-dev libfuse-dev \
-          gcc-aarch64-linux-gnu qemu-user-static
+          libpci-dev libusb-1.0-0-dev libfuse-dev
+
+      - name: Set up environment for ARM64
+        run: |
+          sudo apt update && sudo apt install -y \
+          gcc-aarch64-linux-gnu qemu-user-static \
+          libpci-dev:arm64 libusb-1.0-0-dev:arm64 libfuse-dev:arm64
 
       - name: Generate original tarball
         run: |
@@ -34,6 +39,8 @@ jobs:
           dpkg-buildpackage -us -uc -a amd64
 
       - name: Build ARM64 .deb package
+        env:
+          CC: aarch64-linux-gnu-gcc
         run: |
           ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
           dpkg-buildpackage -us -uc -a arm64
@@ -59,12 +66,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up environment
+      - name: Set up environment for x86_64
         run: |
           sudo apt update && sudo apt install -y \
           build-essential debhelper devscripts fakeroot \
-          libpci-dev libusb-1.0-0-dev libfuse-dev \
-          gcc-aarch64-linux-gnu qemu-user-static
+          libpci-dev libusb-1.0-0-dev libfuse-dev
+
+      - name: Set up environment for ARM64
+        run: |
+          sudo apt update && sudo apt install -y \
+          gcc-aarch64-linux-gnu qemu-user-static \
+          libpci-dev:arm64 libusb-1.0-0-dev:arm64 libfuse-dev:arm64
 
       - name: Generate original tarball
         run: |
@@ -77,6 +89,8 @@ jobs:
           dpkg-buildpackage -us -uc -a amd64
 
       - name: Build ARM64 .deb package
+        env:
+          CC: aarch64-linux-gnu-gcc
         run: |
           ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
           dpkg-buildpackage -us -uc -a arm64
