@@ -22,9 +22,11 @@ jobs:
           build-essential debhelper devscripts fakeroot \
           libpci-dev libusb-1.0-0-dev libfuse-dev
 
-      - name: Enable ARM64 architecture
+      - name: Enable ARM64 architecture and configure repositories
         run: |
           sudo dpkg --add-architecture arm64
+          sudo sed -i 's|http://archive.ubuntu.com/ubuntu|http://ports.ubuntu.com/ubuntu-ports|g' /etc/apt/sources.list
+          sudo sed -i 's|http://security.ubuntu.com/ubuntu|http://ports.ubuntu.com/ubuntu-ports|g' /etc/apt/sources.list
           sudo apt update
 
       - name: Set up environment for ARM64
