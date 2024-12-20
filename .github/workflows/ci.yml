@@ -18,7 +18,14 @@ jobs:
 
       - name: Set up environment
         run: |
-          sudo apt update && sudo apt install -y build-essential debhelper devscripts fakeroot
+          sudo apt update && sudo apt install -y \
+          build-essential debhelper devscripts fakeroot \
+          libpci-dev libusb-1.0-0-dev libfuse-dev
+
+      - name: Generate original tarball
+        run: |
+          version=$(./scripts/getver.sh)
+          git archive --prefix=rshim-${version}/ HEAD | gzip > ../rshim_${version}.orig.tar.gz
 
       - name: Update version and build .deb package
         run: |
@@ -43,7 +50,14 @@ jobs:
 
       - name: Set up environment
         run: |
-          sudo apt update && sudo apt install -y build-essential debhelper devscripts fakeroot
+          sudo apt update && sudo apt install -y \
+          build-essential debhelper devscripts fakeroot \
+          libpci-dev libusb-1.0-0-dev libfuse-dev
+
+      - name: Generate original tarball
+        run: |
+          version=$(./scripts/getver.sh)
+          git archive --prefix=rshim-${version}/ HEAD | gzip > ../rshim_${version}.orig.tar.gz
 
       - name: Update version and build .deb package
         run: |
