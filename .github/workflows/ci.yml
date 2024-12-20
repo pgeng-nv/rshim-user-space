@@ -14,23 +14,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch full history including all tags
+          fetch-depth: 0
 
       - name: Set up environment
         run: |
           sudo apt update && sudo apt install -y \
           build-essential debhelper devscripts fakeroot \
-          libpci-dev libusb-1.0-0-dev libfuse-dev
+          libpci-dev libusb-1.0-0-dev libfuse-dev \
+          gcc-aarch64-linux-gnu qemu-user-static
 
       - name: Generate original tarball
         run: |
           version=$(./scripts/getver.sh)
           git archive --prefix=rshim-${version}/ HEAD | gzip > ../rshim_${version}.orig.tar.gz
 
-      - name: Update version and build .deb package
+      - name: Build x86_64 .deb package
         run: |
           ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
-          echo y | debuild -us -uc
+          dpkg-buildpackage -us -uc -a amd64
+
+      - name: Build ARM64 .deb package
+        run: |
+          ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
+          dpkg-buildpackage -us -uc -a arm64
 
       - name: Move .deb files to working directory
         run: |
@@ -51,23 +57,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Ensure full history including all tags
+          fetch-depth: 0
 
       - name: Set up environment
         run: |
           sudo apt update && sudo apt install -y \
           build-essential debhelper devscripts fakeroot \
-          libpci-dev libusb-1.0-0-dev libfuse-dev
+          libpci-dev libusb-1.0-0-dev libfuse-dev \
+          gcc-aarch64-linux-gnu qemu-user-static
 
       - name: Generate original tarball
         run: |
           version=$(./scripts/getver.sh)
           git archive --prefix=rshim-${version}/ HEAD | gzip > ../rshim_${version}.orig.tar.gz
 
-      - name: Update version and build .deb package
+      - name: Build x86_64 .deb package
         run: |
           ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
-          echo y | debuild -us -uc
+          dpkg-buildpackage -us -uc -a amd64
+
+      - name: Build ARM64 .deb package
+        run: |
+          ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
+          dpkg-buildpackage -us -uc -a arm64
+
+      - name: Move .deb files to working directory
+        run: |
+          mkdir -p deb_packages
+          mv ../*.deb deb_packages/
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
@@ -81,7 +98,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.release.outputs.upload_url }}
-          asset_path: ../*.deb
+          asset_path: deb_packages/*.deb
           asset_name: "rshim_${{ github.ref_name }}.deb"
           asset_content_type: application/vnd.debian.binary-package
-
