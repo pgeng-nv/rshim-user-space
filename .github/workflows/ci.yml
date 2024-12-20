@@ -14,7 +14,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0    # Fetch all history
+          tags: true        # Fetch tags
 
       - name: Set up environment for x86_64
         run: |
@@ -31,6 +32,7 @@ jobs:
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace -w /workspace arm64v8/ubuntu:22.04 /bin/bash -c "
+          git config --global --add safe.directory /workspace &&
           apt update &&
           apt install -y build-essential debhelper devscripts fakeroot gcc libpci-dev libusb-1.0-0-dev libfuse-dev &&
           ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) &&
