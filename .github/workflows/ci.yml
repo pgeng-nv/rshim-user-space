@@ -20,7 +20,7 @@ jobs:
       - name: Set up environment for x86_64
         run: |
           sudo apt update && sudo apt install -y \
-          build-essential debhelper devscripts fakeroot \
+          build-essential debhelper devscripts fakeroot git \
           libpci-dev libusb-1.0-0-dev libfuse-dev
 
       - name: Build x86_64 .deb package
