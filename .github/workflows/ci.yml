@@ -22,35 +22,19 @@ jobs:
           build-essential debhelper devscripts fakeroot \
           libpci-dev libusb-1.0-0-dev libfuse-dev
 
-      - name: Enable ARM64 architecture and configure repositories
-        run: |
-          sudo dpkg --add-architecture arm64
-          sudo sed -i 's|http://archive.ubuntu.com/ubuntu|http://ports.ubuntu.com/ubuntu-ports|g' /etc/apt/sources.list
-          sudo sed -i 's|http://security.ubuntu.com/ubuntu|http://ports.ubuntu.com/ubuntu-ports|g' /etc/apt/sources.list
-          sudo apt update
-
-      - name: Set up environment for ARM64
-        run: |
-          sudo apt install -y \
-          gcc-aarch64-linux-gnu qemu-user-static \
-          libpci-dev:arm64 libusb-1.0-0-dev:arm64 libfuse-dev:arm64
-
-      - name: Generate original tarball
-        run: |
-          version=$(./scripts/getver.sh)
-          git archive --prefix=rshim-${version}/ HEAD | gzip > ../rshim_${version}.orig.tar.gz
-
       - name: Build x86_64 .deb package
         run: |
           ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
           dpkg-buildpackage -us -uc -a amd64
 
-      - name: Build ARM64 .deb package
-        env:
-          CC: aarch64-linux-gnu-gcc
+      - name: Build ARM64 .deb package in Docker
         run: |
-          ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace arm64v8/ubuntu:22.04 /bin/bash -c "
+          apt update &&
+          apt install -y build-essential debhelper devscripts fakeroot gcc libpci-dev libusb-1.0-0-dev libfuse-dev &&
+          ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) &&
           dpkg-buildpackage -us -uc -a arm64
+          "
 
       - name: Move .deb files to working directory
         run: |
