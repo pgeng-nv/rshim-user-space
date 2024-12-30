@@ -26,6 +26,7 @@ jobs:
       - name: Build x86_64 .deb package
         run: |
           ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
+          DEB_BUILD_OPTIONS="nocheck debug" dh_strip --dbg-package=rshim-dbgsym
           dpkg-buildpackage -us -uc -a amd64
 
       - name: Build ARM64 .deb package in Docker
@@ -37,7 +38,8 @@ jobs:
           libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config &&
           git config --global --add safe.directory /workspace &&
           ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) &&
-          DEB_BUILD_OPTIONS='nocheck debug' dpkg-buildpackage -us -uc -a arm64
+          DEB_BUILD_OPTIONS="nocheck debug" dh_strip --dbg-package=rshim-dbgsym &&
+          dpkg-buildpackage -us -uc -a arm64
           "
 
       - name: Move .deb files to working directory
