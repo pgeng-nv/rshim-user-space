@@ -26,8 +26,7 @@ jobs:
       - name: Build x86_64 .deb package
         run: |
           ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
-          DEB_BUILD_OPTIONS="nocheck debug" dh_strip --dbg-package=rshim-dbgsym
-          dpkg-buildpackage -us -uc -a amd64
+          DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage -us -uc -a amd64
 
       - name: Build ARM64 .deb package in Docker
         run: |
@@ -38,20 +37,20 @@ jobs:
           libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config &&
           git config --global --add safe.directory /workspace &&
           ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) &&
-          DEB_BUILD_OPTIONS="nocheck debug" dh_strip --dbg-package=rshim-dbgsym &&
-          dpkg-buildpackage -us -uc -a arm64
+          DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage -us -uc -a arm64
           "
 
       - name: Move .deb files to working directory
         run: |
           mkdir -p deb_packages
           mv ../*.deb deb_packages/
+          mv ../*.ddeb deb_packages/
 
       - name: Upload .deb files as artifacts
         uses: actions/upload-artifact@v4
         with:
           name: rshim-deb-packages
-          path: deb_packages/*.deb
+          path: deb_packages/*.*deb
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
