@@ -27,6 +27,7 @@ jobs:
         run: |
           ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
           DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage -us -uc -a amd64
+          ls ..
 
       - name: Build ARM64 .deb package in Docker
         run: |
@@ -39,6 +40,7 @@ jobs:
           ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) &&
           DEB_BUILD_OPTIONS='nocheck nostrip' dpkg-buildpackage -us -uc -a arm64
           "
+          ls ..
 
       - name: Move .deb files to working directory
         run: |
