@@ -90,7 +90,7 @@ jobs:
                 autoconf automake libtool pkgconfig \
                 pciutils-devel libusb1-devel fuse-devel && \
               git config --global --add safe.directory /workspace && \
-              ARCH=x86_64 ./build-rpm && \
+              ARCH=x86_64 ./scripts/build-rpm && \
               chown -R \$HOST_UID:\$HOST_GID /workspace
             "
           # Our build-rpm script places output in rpmbuild/RPMS/x86_64
@@ -112,7 +112,7 @@ jobs:
                 autoconf automake libtool pkgconfig \
                 pciutils-devel libusb1-devel fuse-devel && \
               git config --global --add safe.directory /workspace && \
-              ARCH=aarch64 ./build-rpm && \
+              ARCH=aarch64 ./scripts/build-rpm && \
               chown -R \$HOST_UID:\$HOST_GID /workspace
             "
           # Our build-rpm script places output in rpmbuild/RPMS/aarch64
