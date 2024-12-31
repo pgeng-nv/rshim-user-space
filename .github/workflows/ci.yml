@@ -29,11 +29,21 @@ jobs:
             build-essential debhelper devscripts fakeroot git \
             libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config
 
-      - name: Build x86_64 .deb package
+      - name: Create source tarball
+        run: |
+          [ -d release_packages ] || mkdir -p release_packages
+          version="$(./scripts/getver.sh)"
+          tarball="rshim-src-${version}.tar.gz"
+          git archive --format=tar.gz -o "$tarball" HEAD
+          mv -v "$tarball" release_packages/
+          ls -lh release_packages
+
+       - name: Build x86_64 .deb package
         run: |
           ./scripts/update_deb_ver.sh "$(./scripts/getver.sh)"
           DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage -us -uc -a amd64
-          ls ..
+          mv -v ../*.deb release_packages/ || echo "No x86_64 .deb files found."
+          ls -lh release_packages
 
       - name: Capture UID/GID for Docker
         id: uidgid
@@ -64,23 +74,8 @@ jobs:
               mv -v ../*.deb /workspace/build/ && \
               chown -R \$HOST_UID:\$HOST_GID /workspace/build
             "
-
-          ls -l build/*
-          id
-
-      - name: Create source tarball
-        run: |
-          mkdir -p deb_packages
-          version="$(./scripts/getver.sh)"
-          tarball="rshim-src-${version}.tar.gz"
-          git archive --format=tar.gz -o "$tarball" HEAD
-          mv -v "$tarball" deb_packages/
-
-      - name: Move .deb files to deb_packages
-        run: |
-          mv -v ../*.deb deb_packages/ || echo "No x86_64 .deb files found."
-          mv -v build/*.deb deb_packages/ || echo "No arm64 .deb files found."
-          ls -lh deb_packages
+          mv -v build/*.deb release_packages/ || echo "No arm64 .deb files found."
+          ls -lh release_packages
 
       - name: Build x86_64 RPM using Rocky Linux
         run: |
@@ -98,6 +93,9 @@ jobs:
               ARCH=x86_64 ./build-rpm && \
               chown -R \$HOST_UID:\$HOST_GID /workspace
             "
+          # Our build-rpm script places output in rpmbuild/RPMS/x86_64
+          find . -type f -name '*.rpm' -exec mv -v {} release_packages/ \; || true
+          ls -lh release_packages
 
       - name: Build arm64 RPM using Rocky Linux
         run: |
@@ -117,25 +115,16 @@ jobs:
               ARCH=aarch64 ./build-rpm && \
               chown -R \$HOST_UID:\$HOST_GID /workspace
             "
+          # Our build-rpm script places output in rpmbuild/RPMS/aarch64
+          find . -type f -name '*.rpm' -exec mv -v {} release_packages/ \; || true
+          ls -lh release_packages
 
-      - name: Move .rpm files to rpm_packages
-        run: |
-          mkdir -p rpm_packages
-          # Our build-rpm script places output in rpmbuild/RPMS/{x86_64,aarch64}
-          find . -type f -name '*.rpm' -exec mv -v {} rpm_packages/ \; || true
-          ls -lh rpm_packages
 
-      - name: Upload .deb artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rshim-deb-packages
-          path: deb_packages/*.deb
-
-      - name: Upload .rpm artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: rshim-rpm-packages
-          path: rpm_packages/*.rpm
+          name: rshim-packages
+          path: release_packages/*
 
       - name: Create GitHub Release
         if: startsWith(github.ref_name, 'rshim-')
@@ -148,7 +137,4 @@ jobs:
           draft: false
           prerelease: false
           artifacts: |
-            deb_packages/*.deb
-            rpm_packages/*.rpm
-            deb_packages/*.tar.gz
-
+            release_packages/*
