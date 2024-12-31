@@ -4,8 +4,10 @@
 # The script generates source rpm, then builds x86_64 or aarch64 rpm depending
 # on the CPU platform it's running on.
 #
+# Must run from the root of the rshim source tree.
+#
 # Usage:
-#   ./build-rpm
+#   ./script/build-rpm
 #
 
 topdir=$(pwd)/rpmbuild
@@ -20,11 +22,10 @@ cp rshim.spec $topdir/SPECS/
 
 # Generate source tarball
 rm -f *.tar.gz
-make dist  &> /dev/null   # xxx.tar.gz is not valid. just use its name
-tgz=$(ls *.tar.gz)
-version=$(basename $tgz .tar.gz | sed 's/rshim-//')
-git archive -o $tgz --prefix=${version}/ HEAD
-mv $tgz $topdir/SOURCES/
+ver_tag=$(grep "^Version:" rshim.spec | cut -d' ' -f2)
+tarball="rshim-${ver_tag}.tar.gz"
+git archive --prefix="rshim-${ver_tag}/" --format=tar.gz -o "$tarball" HEAD
+mv $tarball $topdir/SOURCES/
 
 #
 # Generate source RPM
@@ -40,11 +41,16 @@ fi
 # Build rshim RPM
 #
 rpmbuild --define "_topdir ${topdir}" --rebuild ${src_rpm}
-x64_rpm=$(echo ${topdir}/RPMS/x86_64/${name}*.rpm)
-arm_rpm=$(echo ${topdir}/RPMS/aarch64/${name}*.rpm)
-if [ -f "${x64_rpm}" ]; then
-  echo "x86_64 RPM: ${x64_rpm}"
+x64_rpm=$(echo ${topdir}/RPMS/x86_64/rshim*.rpm)
+arm_rpm=$(echo ${topdir}/RPMS/aarch64/rshim*.rpm)
+version="$(./scripts/getver.sh)"
+if [ -f "$x64_rpm" ]; then
+  rpm_file=rshim-${version}_x86_64.rpm
+  mv $x64_rpm $rpm_file
+  echo "x86_64 RPM: $rpm_file"
 fi
-if [ -f "${arm_rpm}" ]; then
-  echo "aarch64 RPM: ${arm_rpm}"
+if [ -f "$arm_rpm" ]; then
+  rpm_file=rshim-${version}_aarch64.rpm
+  mv $arm_rpm $rpm_file
+  echo "aarch64 RPM: ${rpm_file}"
 fi
