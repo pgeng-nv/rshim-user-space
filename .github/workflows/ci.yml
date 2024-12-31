@@ -37,10 +37,11 @@ jobs:
           mv -v "$tarball" dist/
           ls -lh dist
 
-       - name: Build x86_64 .deb package
+      - name: Build x86_64 deb package
         run: |
           ./scripts/update_deb_ver.sh "$(./scripts/getver.sh)"
-          DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage -us -uc -a amd64
+          DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage \
+            -us -uc -a amd64
           mv -v ../*.deb dist/ || echo "No x86_64 .deb files found."
           ls -lh dist
 
