@@ -46,7 +46,8 @@ jobs:
           mv -v ../*.deb /workspace/build/
           chown -R \$HOST_UID:\$HOST_GID /workspace/build
           "
-          ls build
+          ls -l build/*
+          id
 
       - name: Move .deb files to working directory
         run: |
