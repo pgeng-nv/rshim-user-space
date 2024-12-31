@@ -11,13 +11,14 @@ jobs:
   build-and-test:
     runs-on: ubuntu-22.04
     steps:
-      - name: Check out code
+
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           tags: true
 
-      - name: Install dependencies for .deb
+      - name: Install dependencies (for .deb)
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -27,20 +28,18 @@ jobs:
       - name: Build x86_64 .deb package
         run: |
           ./scripts/update_deb_ver.sh "$(./scripts/getver.sh)"
-          DEB_BUILD_OPTIONS="nocheck nostrip" \
-            dpkg-buildpackage -us -uc -a amd64
+          DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage -us -uc -a amd64
           ls ..
 
-      - name: Capture UID/GID
+      - name: Capture UID/GID for Docker
         id: uidgid
         run: |
           echo "HOST_UID=$(id -u)" >> $GITHUB_ENV
           echo "HOST_GID=$(id -g)" >> $GITHUB_ENV
 
-      - name: Build arm64 .deb package in Docker
+      - name: Build ARM64 .deb package in Docker
         run: |
-          docker run --rm --privileged \
-            multiarch/qemu-user-static --reset -p yes
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
           docker run --rm --platform linux/arm64 \
             -e HOST_UID="${{ env.HOST_UID }}" \
@@ -61,7 +60,9 @@ jobs:
               mv -v ../*.deb /workspace/build/ && \
               chown -R \$HOST_UID:\$HOST_GID /workspace/build
             "
+
           ls -l build/*
+          id
 
       - name: Create source tarball
         run: |
@@ -73,52 +74,52 @@ jobs:
 
       - name: Move .deb files to deb_packages
         run: |
-          mv -v ../*.deb deb_packages/ || echo "No x86_64 .deb found."
-          mv -v build/*.deb deb_packages/ || echo "No arm64 .deb found."
+          mv -v ../*.deb deb_packages/ || echo "No x86_64 .deb files found."
+          mv -v build/*.deb deb_packages/ || echo "No arm64 .deb files found."
           ls -lh deb_packages
 
-      - name: Install QEMU for RPM builds
-        run: |
-          sudo apt-get install -y qemu-user-static
-
-      - name: Build x86_64 RPM in Rocky Linux
+      - name: Build x86_64 RPM using Rocky Linux
         run: |
           docker run --rm \
+            -e HOST_UID="${{ env.HOST_UID }}" \
+            -e HOST_GID="${{ env.HOST_GID }}" \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
-            rockylinux:8 \
+            quay.io/rockylinux/rockylinux:8 \
             /bin/bash -c "
-              dnf install -y git make automake autoconf libtool gcc rpm-build \
-                which python3 && \
-              chmod +x build-rpm && \
-              ./build-rpm && \
-              mkdir -p /workspace/rpm_packages && \
-              # For x86_64 RPMs:
-              mv -v rpmbuild/RPMS/x86_64/*.rpm /workspace/rpm_packages 2>/dev/null \
-                || echo 'No x86_64 RPM found.'
+              yum -y install gcc make rpm-build git \
+                autoconf automake libtool pkgconfig \
+                pciutils-devel libusb1-devel fuse-devel && \
+              git config --global --add safe.directory /workspace && \
+              ARCH=x86_64 ./build-rpm && \
+              chown -R \$HOST_UID:\$HOST_GID /workspace
             "
-          ls -lh rpm_packages || echo 'No rpm_packages folder yet.'
 
-      - name: Build arm64 RPM in Rocky Linux
+      - name: Build arm64 RPM using Rocky Linux
         run: |
-          docker run --rm --privileged \
-            multiarch/qemu-user-static --reset -p yes
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
           docker run --rm --platform linux/arm64 \
+            -e HOST_UID="${{ env.HOST_UID }}" \
+            -e HOST_GID="${{ env.HOST_GID }}" \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
-            rockylinux:8 \
+            quay.io/rockylinux/rockylinux:8 \
             /bin/bash -c "
-              dnf install -y git make automake autoconf libtool gcc rpm-build \
-                which python3 && \
-              chmod +x build-rpm && \
-              ./build-rpm && \
-              mkdir -p /workspace/rpm_packages && \
-              # For arm64 RPMs:
-              mv -v rpmbuild/RPMS/aarch64/*.rpm /workspace/rpm_packages 2>/dev/null \
-                || echo 'No arm64 RPM found.'
+              yum -y install gcc make rpm-build git \
+                autoconf automake libtool pkgconfig \
+                pciutils-devel libusb1-devel fuse-devel && \
+              git config --global --add safe.directory /workspace && \
+              ARCH=aarch64 ./build-rpm && \
+              chown -R \$HOST_UID:\$HOST_GID /workspace
             "
-          ls -lh rpm_packages || echo 'No rpm_packages folder yet.'
+
+      - name: Move .rpm files to rpm_packages
+        run: |
+          mkdir -p rpm_packages
+          # Our build-rpm script places output in rpmbuild/RPMS/{x86_64,aarch64}
+          find . -type f -name '*.rpm' -exec mv -v {} rpm_packages/ \; || true
+          ls -lh rpm_packages
 
       - name: Upload .deb artifacts
         uses: actions/upload-artifact@v4
@@ -126,7 +127,7 @@ jobs:
           name: rshim-deb-packages
           path: deb_packages/*.deb
 
-      - name: Upload RPM artifacts
+      - name: Upload .rpm artifacts
         uses: actions/upload-artifact@v4
         with:
           name: rshim-rpm-packages
@@ -143,5 +144,6 @@ jobs:
           prerelease: false
           files: |
             deb_packages/*.deb
-            deb_packages/*.tar.gz
             rpm_packages/*.rpm
+            deb_packages/*.tar.gz
+
