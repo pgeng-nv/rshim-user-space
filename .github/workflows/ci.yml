@@ -38,15 +38,17 @@ jobs:
           libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config &&
           git config --global --add safe.directory /workspace &&
           ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) &&
-          DEB_BUILD_OPTIONS='nocheck nostrip' dpkg-buildpackage -us -uc -a arm64
+          mkdir -p /workspace/build &&
+          DEB_BUILD_OPTIONS='nocheck nostrip' dpkg-buildpackage -us -uc -a arm64 &&
+          mv ../*.deb /workspace/build/
           "
-          ls ..
+          ls build
 
       - name: Move .deb files to working directory
         run: |
           mkdir -p deb_packages
-          ls ..
-          mv ../*deb deb_packages/
+          mv ../*.deb deb_packages/ || echo "No x86_64 .deb files found."
+          mv build/*deb deb_packages/ || echo "No ARM64 .deb files found."
 
       - name: Upload .deb files as artifacts
         uses: actions/upload-artifact@v4
