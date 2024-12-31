@@ -14,38 +14,52 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0    # Fetch all history
-          tags: true        # Fetch tags
+          fetch-depth: 0
+          tags: true
 
-      - name: Set up environment for x86_64
+      - name: Install dependencies (x86_64)
         run: |
-          sudo apt update && sudo apt install -y \
-          build-essential debhelper devscripts fakeroot git \
-          libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential debhelper devscripts fakeroot git \
+            libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config
 
       - name: Build x86_64 .deb package
         run: |
-          ./scripts/update_deb_ver.sh $(./scripts/getver.sh)
+          ./scripts/update_deb_ver.sh "$(./scripts/getver.sh)"
           DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage -us -uc -a amd64
           ls ..
 
+      # --------------------------------------------------
+      # 1) Capture UID/GID of the workflow runner user
+      # --------------------------------------------------
+      - name: Capture UID/GID
+        id: uidgid
+        run: |
+          echo "HOST_UID=$(id -u)" >> $GITHUB_ENV
+          echo "HOST_GID=$(id -g)" >> $GITHUB_ENV
+
       - name: Build ARM64 .deb package in Docker
         env:
-          HOST_UID: ${{ runner.uid }}
-          HOST_GID: ${{ runner.gid }}
+          HOST_UID: ${{ env.HOST_UID }}
+          HOST_GID: ${{ env.HOST_GID }}
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace -w /workspace arm64v8/ubuntu:22.04 /bin/bash -c "
-          apt update &&
-          apt install -y build-essential debhelper devscripts fakeroot gcc git \
-          libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config &&
-          git config --global --add safe.directory /workspace &&
-          ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) &&
-          mkdir -p /workspace/build &&
-          DEB_BUILD_OPTIONS='nocheck nostrip' dpkg-buildpackage -us -uc -a arm64 &&
-          mv -v ../*.deb /workspace/build/
-          chown -R \$HOST_UID:\$HOST_GID /workspace/build
-          "
+          docker run --rm --platform linux/arm64 \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            arm64v8/ubuntu:22.04 \
+            /bin/bash -c "
+              apt-get update && \
+              apt-get install -y build-essential debhelper devscripts fakeroot gcc git \
+                                 libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config && \
+              git config --global --add safe.directory /workspace && \
+              ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) && \
+              mkdir -p /workspace/build && \
+              DEB_BUILD_OPTIONS='nocheck nostrip' dpkg-buildpackage -us -uc -a arm64 && \
+              mv -v ../*.deb /workspace/build/ && \
+              chown -R \$HOST_UID:\$HOST_GID /workspace/build
+            "
           ls -l build/*
           id
 
