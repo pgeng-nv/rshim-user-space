@@ -30,6 +30,9 @@ jobs:
           ls ..
 
       - name: Build ARM64 .deb package in Docker
+        env:
+          HOST_UID: ${{ runner.uid }}
+          HOST_GID: ${{ runner.gid }}
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace -w /workspace arm64v8/ubuntu:22.04 /bin/bash -c "
@@ -40,15 +43,16 @@ jobs:
           ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) &&
           mkdir -p /workspace/build &&
           DEB_BUILD_OPTIONS='nocheck nostrip' dpkg-buildpackage -us -uc -a arm64 &&
-          mv ../*.deb /workspace/build/
+          mv -v ../*.deb /workspace/build/
+          chown -R \$HOST_UID:\$HOST_GID /workspace/build
           "
           ls build
 
       - name: Move .deb files to working directory
         run: |
           mkdir -p deb_packages
-          mv ../*.deb deb_packages/ || echo "No x86_64 .deb files found."
-          mv build/*deb deb_packages/ || echo "No ARM64 .deb files found."
+          mv -v ../*.deb deb_packages/ || echo "No x86_64 .deb files found."
+          mv -v build/*deb deb_packages/ || echo "No ARM64 .deb files found."
 
       - name: Upload .deb files as artifacts
         uses: actions/upload-artifact@v4
