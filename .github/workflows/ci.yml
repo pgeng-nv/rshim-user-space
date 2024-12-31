@@ -45,6 +45,7 @@ jobs:
       - name: Move .deb files to working directory
         run: |
           mkdir -p deb_packages
+          ls ..
           mv ../*deb deb_packages/
 
       - name: Upload .deb files as artifacts
