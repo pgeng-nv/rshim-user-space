@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for RSHIM (Debuild)
+name: CI/CD Pipeline for RSHIM (Debuild + RPM)
 
 on:
   push:
@@ -11,13 +11,13 @@ jobs:
   build-and-test:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           tags: true
 
-      - name: Install dependencies (x86_64)
+      - name: Install dependencies for .deb
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -37,7 +37,7 @@ jobs:
           echo "HOST_UID=$(id -u)" >> $GITHUB_ENV
           echo "HOST_GID=$(id -g)" >> $GITHUB_ENV
 
-      - name: Build ARM64 .deb package in Docker
+      - name: Build arm64 .deb package in Docker
         run: |
           docker run --rm --privileged \
             multiarch/qemu-user-static --reset -p yes
@@ -51,8 +51,8 @@ jobs:
             /bin/bash -c "
               apt-get update && \
               apt-get install -y build-essential debhelper devscripts \
-                fakeroot gcc git libpci-dev libusb-1.0-0-dev \
-                libfuse-dev pkg-config && \
+                fakeroot gcc git libpci-dev libusb-1.0-0-dev libfuse-dev \
+                pkg-config && \
               git config --global --add safe.directory /workspace && \
               ./scripts/update_deb_ver.sh \$(./scripts/getver.sh) && \
               mkdir -p /workspace/build && \
@@ -61,9 +61,7 @@ jobs:
               mv -v ../*.deb /workspace/build/ && \
               chown -R \$HOST_UID:\$HOST_GID /workspace/build
             "
-
           ls -l build/*
-          id
 
       - name: Create source tarball
         run: |
@@ -75,15 +73,64 @@ jobs:
 
       - name: Move .deb files to deb_packages
         run: |
-          mv -v ../*.deb deb_packages/ || echo "No x86_64 .deb files found."
-          mv -v build/*.deb deb_packages/ || echo "No ARM64 .deb files found."
+          mv -v ../*.deb deb_packages/ || echo "No x86_64 .deb found."
+          mv -v build/*.deb deb_packages/ || echo "No arm64 .deb found."
           ls -lh deb_packages
 
-      - name: Upload .deb files as artifacts
+      - name: Install QEMU for RPM builds
+        run: |
+          sudo apt-get install -y qemu-user-static
+
+      - name: Build x86_64 RPM in Rocky Linux
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            rockylinux:8 \
+            /bin/bash -c "
+              dnf install -y git make automake autoconf libtool gcc rpm-build \
+                which python3 && \
+              chmod +x build-rpm && \
+              ./build-rpm && \
+              mkdir -p /workspace/rpm_packages && \
+              # For x86_64 RPMs:
+              mv -v rpmbuild/RPMS/x86_64/*.rpm /workspace/rpm_packages 2>/dev/null \
+                || echo 'No x86_64 RPM found.'
+            "
+          ls -lh rpm_packages || echo 'No rpm_packages folder yet.'
+
+      - name: Build arm64 RPM in Rocky Linux
+        run: |
+          docker run --rm --privileged \
+            multiarch/qemu-user-static --reset -p yes
+
+          docker run --rm --platform linux/arm64 \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            rockylinux:8 \
+            /bin/bash -c "
+              dnf install -y git make automake autoconf libtool gcc rpm-build \
+                which python3 && \
+              chmod +x build-rpm && \
+              ./build-rpm && \
+              mkdir -p /workspace/rpm_packages && \
+              # For arm64 RPMs:
+              mv -v rpmbuild/RPMS/aarch64/*.rpm /workspace/rpm_packages 2>/dev/null \
+                || echo 'No arm64 RPM found.'
+            "
+          ls -lh rpm_packages || echo 'No rpm_packages folder yet.'
+
+      - name: Upload .deb artifacts
         uses: actions/upload-artifact@v4
         with:
           name: rshim-deb-packages
           path: deb_packages/*.deb
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rshim-rpm-packages
+          path: rpm_packages/*.rpm
 
       - name: Create GitHub Release
         if: startsWith(github.ref_name, 'rshim-')
@@ -97,3 +144,4 @@ jobs:
           files: |
             deb_packages/*.deb
             deb_packages/*.tar.gz
+            rpm_packages/*.rpm
