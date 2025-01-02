@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "get-rshim-pid",
+      "type": "shell",
+      "command": "${workspaceFolder}/get_rshim_pid.sh"
+    }
+  ]
+}
