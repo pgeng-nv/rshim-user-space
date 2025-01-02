@@ -127,6 +127,14 @@ jobs:
           name: rshim-packages
           path: dist/*
 
+      - name: Prepare release body
+        id: changelog
+        run: |
+          body=$(./scripts/get-changelog debian/changelog)
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "${body}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         if: startsWith(github.ref_name, 'rshim-')
         uses: ncipollo/release-action@v1
@@ -134,7 +142,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          body: "Release for ${{ github.ref_name }}."
+          body: ${{ steps.changelog.outputs.body }}
           draft: false
           prerelease: false
           artifacts: |
