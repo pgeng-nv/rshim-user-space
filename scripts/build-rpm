@@ -41,7 +41,7 @@ fi
 # Build rshim RPM
 #
 rpmbuild --define "_topdir ${topdir}" --rebuild ${src_rpm}
-version="$(./scripts/getver.sh)"
+version="$(./scripts/get-ver)"
 x64_rpm=$(echo ${topdir}/RPMS/x86_64/rshim*.rpm)
 if [ -f "$x64_rpm" ]; then
   rpm_file=rshim-${version}_x86_64.rpm

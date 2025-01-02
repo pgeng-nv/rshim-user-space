@@ -32,7 +32,7 @@ jobs:
       - name: Create source tarball
         run: |
           [ -d dist ] || mkdir -p dist
-          version="$(./scripts/getver.sh)"
+          version="$(./scripts/get-ver)"
           tarball="rshim-src-${version}.tar.gz"
           git archive --format=tar.gz -o "$tarball" HEAD
           mv -v "$tarball" dist/
@@ -40,7 +40,7 @@ jobs:
 
       - name: Build x86_64 deb package
         run: |
-          version="$(./scripts/getver.sh)"
+          version="$(./scripts/get-ver)"
           sed -i "1s/(\(.*\))/($version)/" debian/changelog
           DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage \
             -us -uc -a amd64
@@ -69,7 +69,7 @@ jobs:
                 fakeroot gcc git libpci-dev libusb-1.0-0-dev libfuse-dev \
                 pkg-config && \
               git config --global --add safe.directory /workspace && \
-              version=\$(/workspace/scripts/getver.sh) && \
+              version=\$(/workspace/scripts/get-ver) && \
               sed -i \"1s/(\(.*\))/(\$version)/\" \
                 /workspace/debian/changelog && \
               mkdir -p /workspace/build && \
