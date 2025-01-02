@@ -43,6 +43,7 @@ jobs:
           DEB_BUILD_OPTIONS="nocheck nostrip" dpkg-buildpackage \
             -us -uc -a amd64
           mv -v ../*.deb dist/ || echo "No x86_64 .deb files found."
+          ls -lh dist
 
       - name: Capture UID/GID for Docker
         id: uidgid
@@ -74,6 +75,7 @@ jobs:
               chown -R \$HOST_UID:\$HOST_GID /workspace/build
             "
           mv -v build/*.deb dist/ || echo "No arm64 .deb files found."
+          ls -lh dist
 
       - name: Build x86_64 RPM using Rocky Linux
         run: |
@@ -91,7 +93,8 @@ jobs:
               ARCH=x86_64 ./scripts/build-rpm && \
               chown -R \$HOST_UID:\$HOST_GID /workspace
             "
-          find . -type f -name '*.rpm' -exec mv -v {} dist/ \; || true
+          find . -type f -name '*.rpm' -exec mv -v {} dist/ \;
+          ls -lh dist
 
       - name: Build arm64 RPM using Rocky Linux
         run: |
@@ -111,7 +114,8 @@ jobs:
               ARCH=aarch64 ./scripts/build-rpm && \
               chown -R \$HOST_UID:\$HOST_GID /workspace
             "
-          find . -type f -name '*.rpm' -exec mv -v {} dist/ \; || true
+          find . -type f -name '*.rpm' -exec mv -v {} dist/ \;
+          ls -lh dist
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
