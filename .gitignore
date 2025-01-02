@@ -1,0 +1,40 @@
+# Ignore specific files
+Makefile
+Makefile.in
+aclocal.m4
+config.h
+config.h.in
+config.log
+config.status
+configure
+rshim.spec
+stamp-h1
+
+# Ignore specific directories
+config/
+freebsd/
+rhel/
+src/.deps/
+
+# Ignore files within 'src' directory
+src/Makefile
+src/Makefile.in
+src/root@bu-lab105-bmc
+src/rshim
+src/rshim-*.o
+cscope*
+src/.nfs*
+man/*.gz
+scripts/*.bfb
+*qp
+autom4te.cache
+configure~
+*.csv
+*.txt
+*.log
+.vscode/bookmarks.json
+*.rpm
+*.deb
+*.tar.gz
+debian/*
+*~
