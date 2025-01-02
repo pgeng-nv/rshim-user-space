@@ -53,17 +53,11 @@ awk '
   }
 
   END {
-    # If we never found a second_version, set it to something like ??? to avoid blank output.
+    # If we never found a second_version, set it to something to avoid blank output.
     if (second_version == "") {
       second_version = "previous"
     }
 
-    # Clean up top_entry_text:
-    # We only want the lines that contain the changelog bullet points,
-    # which conventionally start with spaces or an asterisk. If the script
-    # is too simplistic, you can refine filtering logic here.
-
-    # Print the final result in the desired format.
-    print "Changelog (" top_version " compared to " second_version "):\n" top_entry_text
+    print "## Changelog (" top_version " compared to " second_version "):\n" top_entry_text
   }
 ' "$CHANGELOG_FILE"

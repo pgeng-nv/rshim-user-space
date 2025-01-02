@@ -29,6 +29,14 @@ jobs:
             build-essential debhelper devscripts fakeroot git \
             libpci-dev libusb-1.0-0-dev libfuse-dev pkg-config
 
+      - name: Prepare release body
+        id: changelog
+        run: |
+          body=$(./scripts/get-changelog debian/changelog)
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "${body}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create source tarball
         run: |
           [ -d dist ] || mkdir -p dist
@@ -126,14 +134,6 @@ jobs:
         with:
           name: rshim-packages
           path: dist/*
-
-      - name: Prepare release body
-        id: changelog
-        run: |
-          body=$(./scripts/get-changelog debian/changelog)
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "${body}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         if: startsWith(github.ref_name, 'rshim-')
