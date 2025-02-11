@@ -190,7 +190,17 @@ rshim0       usb-2-1.7
 .br
 rshim1       pcie-0000:04:00.2
 
+.br
+# Map the rshim device on pcie-0000:04:00 to rshim1 (either will work)
+rshim1       pcie-0000:04:00
+rshim1       pcie-0000:04:00.*
+
 # Ignore usb-1-1.4
 .br
 none         usb-1-1.4
+
+# Ignore the rshim device on pcie-0000:04:00 with a wildcard
+# This works for pcie-0000:04:00.0, pcie-0000:04:00.1, pcie-0000:04:00.2, etc
+.br
+rshim1       pcie-0000:04:00.*
 .in

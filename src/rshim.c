@@ -2112,6 +2112,11 @@ int rshim_notify(rshim_backend_t *bd, int event, int code)
 static int rshim_find_index(char *dev_name)
 {
   int i;
+  bool pcie_device = false;
+  int compare_len;
+
+  if (strncmp(dev_name, "pcie", 4) == 0)
+    pcie_device = true;
 
   /* Need to match static device name if configured. */
   if (rshim_static_dev_name && strcmp(rshim_static_dev_name, dev_name))
@@ -2123,9 +2128,28 @@ static int rshim_find_index(char *dev_name)
 
   /* First look for a match with a previous device name. */
   for (i = 0; i < RSHIM_MAX_DEV; i++) {
-    if (rshim_dev_names[i] && !strcmp(dev_name, rshim_dev_names[i])) {
-      RSHIM_DBG("Found match with previous at index %d\n", i);
-      return i;
+    if (rshim_dev_names[i]) {
+
+      /* Ignore the "function" part for PCIe BPF string, so for a rshim.conf
+       * string like "rshim1 pcie-0000:04:00.2", we will skip the ".2" part,
+       * thus if the user uses a simple string like "pcie-0000:04:00" or
+       * "pcie-0000:04:00.X", it will still match the device name to be
+       * compared.
+       */
+      if (pcie_device) {
+        compare_len = strlen(dev_name) - 2;
+      } else {
+        compare_len = strlen(dev_name);
+      }
+
+      if (!strncmp(dev_name, rshim_dev_names[i], compare_len)) {
+        RSHIM_INFO("Found match with previous at index %d\n", i);
+        RSHIM_INFO("dev_name: %s, rshim_dev_names[%d]: %s\n",
+                   dev_name, i, rshim_dev_names[i]);
+        // must replace simple string with full name
+        strcpy(rshim_dev_names[i], dev_name);
+        return i;
+      }
     }
   }
 
@@ -2789,13 +2813,30 @@ void rshim_deref(rshim_backend_t *bd)
 bool rshim_allow_device(const char *devname)
 {
   int i;
+  bool pcie_device = false;
+  int compare_len;
+
+  if (strncmp(devname, "pcie", 4) == 0)
+    pcie_device = true;
 
   if (rshim_static_dev_name && strcmp(rshim_static_dev_name, devname))
     return false;
 
+  /* Ignore the "function" part for PCIe BPF string, so for a rshim.conf
+   * string like "rshim1 pcie-0000:04:00.2", we will skip the ".2" part,
+   * thus even if the user specifies "pcie-0000:04:00" or
+   * "pcie-0000:04:00.X", it will still match the device name to be
+   * compared.
+   */
+  if (pcie_device) {
+    compare_len = strlen(devname) - 2;
+  } else {
+    compare_len = strlen(devname);
+  }
+
   for (i = 0; i < RSHIM_MAX_DEV; i++) {
     if (rshim_blocked_dev_names[i] &&
-        !strcmp(rshim_blocked_dev_names[i], devname))
+        !strncmp(rshim_blocked_dev_names[i], devname, compare_len))
       return false;
   }
 
