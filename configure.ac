@@ -9,6 +9,7 @@ AC_LANG(C)
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_CONFIG_HEADERS([config.h])
+m4_pattern_allow([AC_MSG_ERROR])
 AC_CONFIG_FILES([
   Makefile
   rshim.spec
